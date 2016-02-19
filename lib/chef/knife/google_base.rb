@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'chef/knife'
+require "chef/knife"
 
 class Chef
   class Knife
@@ -24,9 +24,9 @@ class Chef
       def self.included(includer)
         includer.class_eval do
           deps do
-            require 'google/api_client'
-            require 'knife-google/version'
-            require 'multi_json'
+            require "google/api_client"
+            require "knife-google/version"
+            require "multi_json"
           end
           option :gce_project,
             :long => "--gce-project PROJECT",
@@ -48,12 +48,12 @@ class Chef
         client.authorization = :google_app_default
         client.authorization.fetch_access_token!
         @compute ||= begin
-          compute = client.discovered_api('compute')
+          compute = client.discovered_api("compute")
         end
       end
 
       def selflink2name(selflink)
-        selflink.to_s == '' ? selflink.to_s : selflink.split('/').last
+        selflink.to_s == "" ? selflink.to_s : selflink.split("/").last
       end
 
       def locate_config_value(key)
@@ -61,7 +61,7 @@ class Chef
         config[key] || Chef::Config[:knife][key]
       end
 
-      def msg_pair(label, value, color=:cyan)
+      def msg_pair(label, value, color = :cyan)
         if value && !value.to_s.empty?
           ui.info("#{ui.color(label, color)}: #{value}")
         end

@@ -23,7 +23,7 @@ require "chef/knife/cloud/google_service_helpers"
 require "chef/knife/cloud/google_service_options"
 
 class Chef::Knife::Cloud
-  class GoogleZoneList < ServerListCommand
+  class GoogleZoneList < ResourceListCommand
     include GoogleServiceHelpers
     include GoogleServiceOptions
 

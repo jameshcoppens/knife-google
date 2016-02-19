@@ -17,7 +17,6 @@
 #
 
 class Chef::Knife::Cloud
-  # rubocop:disable Style/AlignParameters
   module GoogleServiceOptions
     def self.included(includer)
       includer.class_eval do

@@ -1,6 +1,7 @@
 #
 # Author:: Paul Rossman (<paulrossman@google.com>)
-# Copyright:: Copyright 2015 Google Inc. All Rights Reserved.
+# Author:: Chef Partner Engineering (<partnereng@chef.io>)
+# Copyright:: Copyright 2015-2016 Google Inc., Chef Software, Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,37 +16,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "chef/knife/google_base"
+require "chef/knife"
+require "chef/knife/cloud/list_resource_command"
+require "chef/knife/cloud/google_service"
+require "chef/knife/cloud/google_service_helpers"
+require "chef/knife/cloud/google_service_options"
 
-class Chef
-  class Knife
-    class GoogleProjectQuotas < Knife
+class Chef::Knife::Cloud
+  class GoogleProjectQuotas < ResourceListCommand
+    include GoogleServiceHelpers
+    include GoogleServiceOptions
 
-      include Knife::GoogleBase
+    banner "knife google project quotas"
 
-      banner "knife google project quotas"
+    def before_exec_command
+      @columns_with_info = [
+        { label: "Quota", key: "metric", value_callback: method(:format_name) },
+        { label: "Limit", key: "limit", value_callback: method(:format_number) },
+        { label: "Usage", key: "usage", value_callback: method(:format_number) }
+      ]
 
-      def run
-        $stdout.sync = true
-        quotas_list = [
-          ui.color("project", :bold),
-          ui.color("quota", :bold),
-          ui.color("limit", :bold),
-          ui.color("usage", :bold)].flatten.compact
-        output_column_count = quotas_list.length
-        result = client.execute(
-          :api_method => compute.projects.get,
-          :parameters => { :project => config[:gce_project] })
-        body = MultiJson.load(result.body, :symbolize_keys => true)
-        body[:quotas].each do |quota|
-          quotas_list << config[:gce_project]
-          quotas_list << quota[:metric].downcase
-          quotas_list << quota[:limit].to_s
-          quotas_list << quota[:usage].to_s
-        end
-        ui.info(ui.list(quotas_list, :uneven_columns_across, output_column_count))
-      end
+      @sort_by_field = "metric"
+    end
 
+    def query_resource
+      service.list_project_quotas
+    end
+
+    def format_name(name)
+      name.split("_").map { |x| x.capitalize }.join(" ")
+    end
+
+    def format_number(number)
+      number % 1 == 0 ? number.to_i.to_s : number.to_s
     end
   end
 end

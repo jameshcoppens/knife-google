@@ -17,44 +17,45 @@
 # limitations under the License.
 
 require "chef/knife"
-require "chef/knife/cloud/server/list_command"
-require "chef/knife/cloud/server/list_options"
+require "chef/knife/cloud/list_resource_command"
 require "chef/knife/cloud/google_service"
 require "chef/knife/cloud/google_service_helpers"
 require "chef/knife/cloud/google_service_options"
 
 class Chef::Knife::Cloud
-  class GoogleServerList < ServerListCommand
+  class GoogleRegionList < ResourceListCommand
     include GoogleServiceHelpers
     include GoogleServiceOptions
 
-    banner "knife google server list"
+    banner "knife google zone list"
 
     def before_exec_command
       @columns_with_info = [
-        { label: "Instance Name", key: "name" },
-        { label: "Status",        key: "status", value_callback: method(:format_status_value) },
-        { label: "Machine Type",  key: "machine_type" },
-        { label: "Internal IP",   key: "private_ip" },
-        { label: "External IP",   key: "public_ip" },
-        { label: "Network",       key: "network" }
+        { label: "Region", key: "name" },
+        { label: "Status", key: "status", value_callback: method(:format_status_value) },
+        { label: "Zones",  key: "zones", value_callback: method(:format_zones) }
       ]
 
       @sort_by_field = "name"
     end
 
+    def query_resource
+      service.list_regions
+    end
+
     def format_status_value(status)
       status = status.downcase
-      status_color = case status
-                     when "stopping", "stopped", "terminated"
-                       :red
-                     when "requested", "provisioning", "staging"
-                       :yellow
-                     else
+      status_color = if status == "up"
                        :green
+                     else
+                       :red
                      end
 
       ui.color(status, status_color)
+    end
+
+    def format_zones(zones)
+      zones.map { |zone| zone.split("/").last }.sort.join(", ")
     end
   end
 end

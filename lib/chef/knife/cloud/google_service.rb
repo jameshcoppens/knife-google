@@ -16,10 +16,10 @@
 # limitations under the License.
 #
 
-require 'chef/knife/cloud/exceptions'
-require 'chef/knife/cloud/service'
-require 'chef/knife/cloud/helpers'
-require 'google/apis/compute_v1'
+require "chef/knife/cloud/exceptions"
+require "chef/knife/cloud/service"
+require "chef/knife/cloud/helpers"
+require "google/apis/compute_v1"
 
 class Chef::Knife::Cloud
   class GoogleService < Service
@@ -41,13 +41,12 @@ class Chef::Knife::Cloud
 
     def authorization
       @authorization ||= Google::Auth.get_application_default(
-        [ 
+        [
           "https://www.googleapis.com/auth/cloud-platform",
           "https://www.googleapis.com/auth/compute"
         ]
       )
     end
-
 
     def create_server
     end
@@ -63,7 +62,7 @@ class Chef::Knife::Cloud
         memo << OpenStruct.new(
           name:         instance.name,
           status:       instance.status,
-          machine_type: instance.machine_type.split('/').last,
+          machine_type: instance.machine_type.split("/").last,
           network:      instance_network(instance),
           private_ip:   instance_private_ip(instance),
           public_ip:    instance_public_ip(instance)
@@ -73,20 +72,34 @@ class Chef::Knife::Cloud
 
     def list_zones
       zones = connection.list_zones(project).items
-      return [] if zones.nil?
+      return [] if zones.nil? || disks.empty?
 
       zones
     end
 
     def list_disks
       disks = connection.list_disks(project, zone).items
-      return [] if disks.nil?
+      return [] if disks.nil? || disks.empty?
 
       disks
     end
 
+    def list_regions
+      regions = connection.list_regions(project).items
+      return [] if regions.nil? || regions.empty?
+
+      regions
+    end
+
+    def list_project_quotas
+      quotas = connection.get_project(project).quotas
+      return [] if quotas.nil? || quotas.empty?
+
+      quotas
+    end
+
     def instance_network(instance)
-      instance.network_interfaces.first.network.split('/').last
+      instance.network_interfaces.first.network.split("/").last
     rescue NoMethodError
       "unknown"
     end
@@ -103,7 +116,7 @@ class Chef::Knife::Cloud
       "unknown"
     end
 
-    def server_summary(server, _columns_with_info=nil)
+    def server_summary(server, _columns_with_info = nil)
     end
   end
 end

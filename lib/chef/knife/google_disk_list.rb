@@ -32,11 +32,11 @@ class Chef::Knife::Cloud
     def before_exec_command
       @columns_with_info = [
         { label: "Zone",         key: "name" },
-        { label: "Status",       key: "status",       value_callback: method(:format_status_value) },
+        { label: "Status",       key: "status", value_callback: method(:format_status_value) },
         { label: "Size (GB)", key: "size_gb" },
-        { label: "Type",         key: "type",         value_callback: method(:format_disk_type) },
+        { label: "Type",         key: "type", value_callback: method(:format_disk_type) },
         { label: "Source Image", key: "source_image", value_callback: method(:format_source_image) },
-        { label: "Attached To",  key: "users",        value_callback: method(:format_users) }
+        { label: "Attached To",  key: "users", value_callback: method(:format_users) }
       ]
 
       @sort_by_field = "name"
@@ -58,7 +58,7 @@ class Chef::Knife::Cloud
     end
 
     def format_disk_type(type)
-      type.split('/').last
+      type.split("/").last
     end
 
     def format_source_image(source)
