@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'chef/knife/google_base'
+require "chef/knife/google_base"
 
 class Chef
   class Knife
@@ -24,8 +24,8 @@ class Chef
       include Knife::GoogleBase
 
       deps do
-        require 'chef/knife/bootstrap'
-        require 'timeout'
+        require "chef/knife/bootstrap"
+        require "timeout"
         Chef::Knife::Bootstrap.load_deps
       end
 
@@ -111,24 +111,24 @@ class Chef
         :short => "-T TAG1,TAG2,TAG3",
         :long => "--gce-tags TAG1,TAG2,TAG3",
         :description => "Tags for this server",
-        :proc => Proc.new { |tags| tags.split(',') },
+        :proc => Proc.new { |tags| tags.split(",") },
         :default => []
 
       option :metadata,
         :long => "--gce-metadata Key=Value[,Key=Value...]",
         :description => "Additional metadata for this server",
-        :proc => Proc.new { |metadata| metadata.split(',') },
+        :proc => Proc.new { |metadata| metadata.split(",") },
         :default => []
 
       option :metadata_from_file,
         :long => "--gce-metadata-from-file Key=File[,Key=File...]",
         :description => "Additional metadata loaded from a YAML file",
-        :proc => Proc.new { |metadata| metadata.split(',') },
+        :proc => Proc.new { |metadata| metadata.split(",") },
         :default => []
 
       option :service_account_scopes,
         :long => "--gce-service-account-scopes SCOPE1,SCOPE2,SCOPE3",
-        :proc => Proc.new { |service_account_scopes| service_account_scopes.split(',') },
+        :proc => Proc.new { |service_account_scopes| service_account_scopes.split(",") },
         :description => "Service account scopes for this server",
         :default => []
 
@@ -141,10 +141,10 @@ class Chef
       option :server_connect_interface,
         :long => "--gce-server-connect-interface INTERFACE",
         :description => "Whether to use PUBLIC or PRIVATE interface to connect; default is 'PUBLIC'",
-        :default => 'PUBLIC'
+        :default => "PUBLIC"
 
       option :public_ip,
-        :long=> "--gce-public-ip IP_ADDRESS",
+        :long => "--gce-public-ip IP_ADDRESS",
         :description => "EPHEMERAL or static IP address or NONE; default is 'EPHEMERAL'",
         :default => "EPHEMERAL"
 
@@ -192,7 +192,7 @@ class Chef
         :short => "-d DISTRO",
         :long => "--distro DISTRO",
         :description => "Bootstrap a distro using a template; default is 'chef-full'",
-        :default => 'chef-full'
+        :default => "chef-full"
 
       option :template_file,
         :long => "--template-file TEMPLATE",
@@ -226,9 +226,9 @@ class Chef
         :long => "--hint HINT_NAME[=HINT_FILE]",
         :description => "Specify Ohai Hint to be set on the bootstrap target. Use multiple --hint options to specify multiple hints.",
         :proc => Proc.new { |h|
-           Chef::Config[:knife][:hints] ||= {}
-           name, path = h.split("=")
-           Chef::Config[:knife][:hints][name] = path ? MultiJson.load(::File.read(path)) : Hash.new
+          Chef::Config[:knife][:hints] ||= {}
+          name, path = h.split("=")
+          Chef::Config[:knife][:hints][name] = path ? MultiJson.load(::File.read(path)) : Hash.new
         }
 
       option :secret,
@@ -262,12 +262,12 @@ class Chef
       end
 
       def tunnel_test_ssh(hostname, &block)
-        gw_host, gw_user = config[:ssh_gateway].split('@').reverse
-        gw_host, gw_port = gw_host.split(':')
+        gw_host, gw_user = config[:ssh_gateway].split("@").reverse
+        gw_host, gw_port = gw_host.split(":")
         gateway = Net::SSH::Gateway.new(gw_host, gw_user, :port => gw_port || 22)
         status = false
         gateway.open(hostname, config[:ssh_port]) do |local_tunnel_port|
-          status = tcp_test_ssh('localhost', local_tunnel_port, &block)
+          status = tcp_test_ssh("localhost", local_tunnel_port, &block)
         end
         status
       rescue SocketError, Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Errno::ENETUNREACH, IOError
@@ -279,7 +279,7 @@ class Chef
 
       def wait_for_direct_sshd(hostname, ssh_port)
         ui.info("Waiting for direct ssh to #{hostname}:#{ssh_port}") until tcp_test_ssh(hostname, ssh_port) {
-          sleep @initial_sleep_delay ||=  10
+          sleep @initial_sleep_delay ||= 10
           ui.info(ui.color("Connected to server", :magenta))
         }
       end
@@ -308,7 +308,7 @@ class Chef
         bootstrap.config[:bootstrap_version] = config[:bootstrap_version]
         bootstrap.config[:first_boot_attributes] = config[:json_attributes]
         bootstrap.config[:distro] = config[:distro]
-        bootstrap.config[:use_sudo] = true unless config[:ssh_user] == 'root'
+        bootstrap.config[:use_sudo] = true unless config[:ssh_user] == "root"
         bootstrap.config[:template_file] = config[:template_file]
         bootstrap.config[:environment] = config[:environment]
         bootstrap.config[:encrypted_data_bag_secret] = locate_config_value(:encrypted_data_bag_secret)
@@ -332,22 +332,22 @@ class Chef
         end
 
         if config[:auto_migrate] then
-          auto_migrate = 'MIGRATE'
+          auto_migrate = "MIGRATE"
         else
-          auto_migrate = 'TERMINATE'
+          auto_migrate = "TERMINATE"
         end
 
         # this parameter is a string during the post and boolean otherwise
         if config[:auto_restart] then
-          auto_restart = 'true'
+          auto_restart = "true"
         else
-          auto_restart = 'false'
+          auto_restart = "false"
         end
 
         if config[:boot_disk_autodelete] then
-          boot_disk_autodelete = 'true'
+          boot_disk_autodelete = "true"
         else
-          boot_disk_autodelete = 'false'
+          boot_disk_autodelete = "false"
         end
 
         if config[:boot_disk_name].to_s.empty? then
@@ -379,7 +379,7 @@ class Chef
         begin
           result = client.execute(
             :api_method => compute.machine_types.get,
-            :parameters => {:project => config[:gce_project], :zone => config[:gce_zone], :machineType => config[:machine_type]})
+            :parameters => { :project => config[:gce_project], :zone => config[:gce_zone], :machineType => config[:machine_type] })
           body = MultiJson.load(result.body, :symbolize_keys => true)
           machine_type = body[:selfLink]
           raise(body[:error][:message]) if result.status != 200
@@ -395,26 +395,26 @@ class Chef
             # no project specified so assume use of public image
             case config[:image].downcase
             when /centos/
-              project = 'centos-cloud'
+              project = "centos-cloud"
             when /container-vm/
-              project = 'google-containers'
+              project = "google-containers"
             when /coreos/
-              project = 'coreos-cloud'
+              project = "coreos-cloud"
             when /debian/
-              project = 'debian-cloud'
+              project = "debian-cloud"
             when /opensuse-cloud/
-              project = 'opensuse-cloud'
+              project = "opensuse-cloud"
             when /rhel/
-              project = 'rhel-cloud'
+              project = "rhel-cloud"
             when /sles/
-              project = 'suse-cloud'
+              project = "suse-cloud"
             when /ubuntu/
-              project = 'ubuntu-os-cloud'
+              project = "ubuntu-os-cloud"
             end
           end
           result = client.execute(
             :api_method => compute.images.list,
-            :parameters => {:project => project, :filter => "name eq ^#{config[:image]}$"})
+            :parameters => { :project => project, :filter => "name eq ^#{config[:image]}$" })
           body = MultiJson.load(result.body, :symbolize_keys => true)
           if body[:items][0][:name] == config[:image]
             source_image = body[:items][0][:selfLink]
@@ -431,8 +431,8 @@ class Chef
           ui.info(ui.color("Creating boot disk", :magenta))
           result = client.execute(
             :api_method => compute.disks.insert,
-            :parameters => {:project => config[:gce_project], :zone => config[:gce_zone], :sourceImage => source_image},
-            :body_object => {:name => boot_disk_name, :sizeGb => boot_disk_size.to_i, :type => boot_disk_type})
+            :parameters => { :project => config[:gce_project], :zone => config[:gce_zone], :sourceImage => source_image },
+            :body_object => { :name => boot_disk_name, :sizeGb => boot_disk_size.to_i, :type => boot_disk_type })
           body = MultiJson.load(result.body, :symbolize_keys => true)
           # this will not catch all possible errors
           raise "#{body[:error][:message]}" if result.status != 200
@@ -443,23 +443,23 @@ class Chef
 
         disks = []
         begin
-          Timeout::timeout(120) do
+          Timeout.timeout(120) do
             status = ""
             until status == "READY"
               sleep 2
               result = client.execute(
                 :api_method => compute.disks.get,
-                :parameters => {:project => config[:gce_project], :zone => config[:gce_zone], :disk => boot_disk_name})
+                :parameters => { :project => config[:gce_project], :zone => config[:gce_zone], :disk => boot_disk_name })
               body = MultiJson.load(result.body, :symbolize_keys => true)
               ui.info("disk #{body[:status].downcase}") unless body[:status].empty?
               status = body[:status]
             end
-            disks = [{'autoDelete' => boot_disk_autodelete,
-                      'boot' => true,
-                      'deviceName' => boot_disk_name,
-                      'mode' => "READ_WRITE",
-                      'source' => body[:selfLink],
-                      'type' => "PERSISTENT"}]
+            disks = [{ "autoDelete" => boot_disk_autodelete,
+                       "boot" => true,
+                       "deviceName" => boot_disk_name,
+                       "mode" => "READ_WRITE",
+                       "source" => body[:selfLink],
+                       "type" => "PERSISTENT" }]
           end
         rescue Timeout::Error
           ui.error("Timeout exceeded with disk status: #{status}")
@@ -472,18 +472,18 @@ class Chef
         begin
           unless config[:additional_disks].to_s.empty? then
             ui.info(ui.color("Attaching additional disk(s)", :magenta))
-            config[:additional_disks].to_s.split(',').map do |additional_disk|
+            config[:additional_disks].to_s.split(",").map do |additional_disk|
               result = client.execute(
                 :api_method => compute.disks.get,
-                :parameters => {:project => config[:gce_project], :zone => config[:gce_zone], :disk => additional_disk})
+                :parameters => { :project => config[:gce_project], :zone => config[:gce_zone], :disk => additional_disk })
               body = MultiJson.load(result.body, :symbolize_keys => true)
               # TODO add some status notification
               # TODO add some sort of validation or error checking
-              disks.push({'boot' => false,
-                          'deviceName' => body[:name],
-                          'mode' => "READ_WRITE",
-                          'source' => body[:selfLink],
-                          'type' => "PERSISTENT"})
+              disks.push({ "boot" => false,
+                           "deviceName" => body[:name],
+                           "mode" => "READ_WRITE",
+                           "source" => body[:selfLink],
+                           "type" => "PERSISTENT" })
             end
           end
         rescue => e
@@ -495,20 +495,20 @@ class Chef
 
         metadata_items = []
         config[:metadata].collect do |pair|
-          mkey, mvalue = pair.split('=')
-          metadata_items << {'key' => mkey, 'value' => mvalue}
+          mkey, mvalue = pair.split("=")
+          metadata_items << { "key" => mkey, "value" => mvalue }
         end
 
         # metadata from file
 
         config[:metadata_from_file].each do |p|
-          mkey, filename = p.split('=')
+          mkey, filename = p.split("=")
           begin
             file_content = File.read(filename)
           rescue
             ui.error("Could not read metadata file #{filename}")
           end
-          metadata_items << {'key' => mkey, 'value' => file_content}
+          metadata_items << { "key" => mkey, "value" => file_content }
         end
 
         # network
@@ -516,7 +516,7 @@ class Chef
         begin
           result = client.execute(
             :api_method => compute.networks.get,
-            :parameters => {:project => config[:gce_project], :network => config[:network]})
+            :parameters => { :project => config[:gce_project], :network => config[:network] })
           body = MultiJson.load(result.body, :symbolize_keys => true)
           network = body[:selfLink]
         rescue => e
@@ -524,12 +524,12 @@ class Chef
           raise
         end
 
-        network_interface = {"network" => network}
+        network_interface = { "network" => network }
 
         if config[:public_ip] == "EPHEMERAL"
-          network_interface.merge!("accessConfigs" => [{"name" => "External NAT", "type" => "ONE_TO_ONE_NAT"}])
+          network_interface.merge!("accessConfigs" => [{ "name" => "External NAT", "type" => "ONE_TO_ONE_NAT" }])
         elsif config[:public_ip] =~ /\d+\.\d+\.\d+\.\d+/
-          network_interface.merge!("accessConfigs" => [{"name" => "External NAT", "type" => "ONE_TO_ONE_NAT", "natIP" => config[:public_ip]}])
+          network_interface.merge!("accessConfigs" => [{ "name" => "External NAT", "type" => "ONE_TO_ONE_NAT", "natIP" => config[:public_ip] }])
         elsif config[:public_ip] == "NONE"
           config[:server_connect_interface] = "PRIVATE"
         else
@@ -542,16 +542,16 @@ class Chef
           begin
             result = client.execute(
               :api_method => compute.instances.insert,
-              :parameters => {:project => config[:gce_project], :zone => config[:gce_zone]},
-              :body_object => {:name => @name_args.first,
-                               :machineType => machine_type,
-                               :disks => disks,
-                               :canIpForward => can_ip_forward,
-                               :networkInterfaces => [network_interface],
-                               :scheduling => {'automaticRestart' => auto_restart,
-                                               'onHostMaintenance' => auto_migrate},
-                               :metadata => {'items' => metadata_items},
-                               :tags => {'items' => config[:tags]}})
+              :parameters => { :project => config[:gce_project], :zone => config[:gce_zone] },
+              :body_object => { :name => @name_args.first,
+                                :machineType => machine_type,
+                                :disks => disks,
+                                :canIpForward => can_ip_forward,
+                                :networkInterfaces => [network_interface],
+                                :scheduling => { "automaticRestart" => auto_restart,
+                                                 "onHostMaintenance" => auto_migrate },
+                                :metadata => { "items" => metadata_items },
+                                :tags => { "items" => config[:tags] } })
             body = MultiJson.load(result.body, :symbolize_keys => true)
             # this will not catch all possible errors
             raise "#{body[:error][:message]}" if result.status != 200
@@ -563,19 +563,19 @@ class Chef
           begin
             result = client.execute(
               :api_method => compute.instances.insert,
-              :parameters => {:project => config[:gce_project], :zone => config[:gce_zone]},
-              :body_object => {:name => @name_args.first,
-                               :machineType => machine_type,
-                               :disks => disks,
-                               :canIpForward => can_ip_forward,
-                               :networkInterfaces => [network_interface],
-                               :serviceAccounts => [{'kind' => 'compute#serviceAccount',
-                                                     'email' => config[:service_account_name],
-                                                     'scopes' => config[:service_account_scopes]}],
-                               :scheduling => {'automaticRestart' => auto_restart,
-                                               'onHostMaintenance' => auto_migrate},
-                               :metadata => {'items' => metadata_items},
-                               :tags => {'items' => config[:tags]}})
+              :parameters => { :project => config[:gce_project], :zone => config[:gce_zone] },
+              :body_object => { :name => @name_args.first,
+                                :machineType => machine_type,
+                                :disks => disks,
+                                :canIpForward => can_ip_forward,
+                                :networkInterfaces => [network_interface],
+                                :serviceAccounts => [{ "kind" => 'compute#serviceAccount',
+                                                       "email" => config[:service_account_name],
+                                                       "scopes" => config[:service_account_scopes] }],
+                                :scheduling => { "automaticRestart" => auto_restart,
+                                                 "onHostMaintenance" => auto_migrate },
+                                :metadata => { "items" => metadata_items },
+                                :tags => { "items" => config[:tags] } })
             body = MultiJson.load(result.body, :symbolize_keys => true)
             # this will not catch all possible errors
             raise "#{body[:error][:message]}" if result.status != 200
@@ -587,13 +587,13 @@ class Chef
 
         begin
           sleep 2
-          Timeout::timeout(120) do
+          Timeout.timeout(120) do
             status = ""
             until status == "RUNNING"
               sleep 2
               result = client.execute(
                 :api_method => compute.instances.get,
-                :parameters => {:project => config[:gce_project], :zone => config[:gce_zone], :instance => @name_args.first})
+                :parameters => { :project => config[:gce_project], :zone => config[:gce_zone], :instance => @name_args.first })
               body = MultiJson.load(result.body, :symbolize_keys => true)
               ui.info("server #{body[:status].downcase}") unless body[:status].empty?
               status = body[:status]

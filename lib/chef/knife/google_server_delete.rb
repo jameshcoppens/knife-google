@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'chef/knife/google_base'
+require "chef/knife/google_base"
 
 class Chef
   class Knife
@@ -24,7 +24,7 @@ class Chef
       include Knife::GoogleBase
 
       deps do
-        require 'chef/api_client'
+        require "chef/api_client"
       end
 
       banner "knife google server delete SERVER [SERVER] (options)"
@@ -62,7 +62,7 @@ class Chef
             ui.confirm("Delete the instance '#{config[:gce_zone]}:#{instance_name}'")
             result = client.execute(
               :api_method => compute.instance.delete,
-              :parameters => {:project => config[:gce_project], :zone => config[:gce_zone], :instance => instance_name})
+              :parameters => { :project => config[:gce_project], :zone => config[:gce_zone], :instance => instance_name })
             ui.warn("Instance '#{config[:gce_zone]}:#{instance_name}' deleted") if result.status == 200
           rescue
             body = MultiJson.load(result.body, :symbolize_keys => true)

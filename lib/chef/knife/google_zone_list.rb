@@ -1,6 +1,7 @@
 #
 # Author:: Paul Rossman (<paulrossman@google.com>)
-# Copyright:: Copyright 2015 Google Inc. All Rights Reserved.
+# Author:: Chef Partner Engineering (<partnereng@chef.io>)
+# Copyright:: Copyright 2015-2016 Google Inc., Chef Software, Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,41 +16,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'chef/knife/google_base'
+require "chef/knife"
+require "chef/knife/cloud/list_resource_command"
+require "chef/knife/cloud/google_service"
+require "chef/knife/cloud/google_service_helpers"
+require "chef/knife/cloud/google_service_options"
 
-class Chef
-  class Knife
-    class GoogleZoneList < Knife
+class Chef::Knife::Cloud
+  class GoogleZoneList < ServerListCommand
+    include GoogleServiceHelpers
+    include GoogleServiceOptions
 
-      include Knife::GoogleBase
+    banner "knife google zone list"
 
-      banner "knife google zone list"
+    def before_exec_command
+      @columns_with_info = [
+        { label: "Zone",   key: "name" },
+        { label: "Status", key: "status", value_callback: method(:format_status_value) }
+      ]
 
-      def run
-        $stdout.sync = true
-        zones_list = [
-          ui.color('name', :bold),
-          ui.color('status', :bold)].flatten.compact
-        output_column_count = zones_list.length
-        result = client.execute(
-          :api_method => compute.zones.list,
-          :parameters => {:project => config[:gce_project]})
-        body = MultiJson.load(result.body, :symbolize_keys => true)
-        body[:items].each do |item|
-          zones_list << item[:name]
-          zones_list << begin
-            status = item[:status].downcase
-            case status
-            when 'up'
-              ui.color(status, :green)
-            else
-              ui.color(status, :red)
-            end
-          end
-        end
-        ui.info(ui.list(zones_list, :uneven_columns_across, output_column_count))
-      end
+      @sort_by_field = "name"
+    end
 
+    def format_status_value(status)
+      status = status.downcase
+      status_color = if status == "up"
+                       :green
+                     else
+                       :red
+                     end
+
+      ui.color(status, status_color)
+    end
+
+    def query_resource
+      service.list_zones
     end
   end
 end

@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'chef/knife/google_base'
+require "chef/knife/google_base"
 
 class Chef
   class Knife
@@ -28,14 +28,14 @@ class Chef
       def run
         $stdout.sync = true
         quotas_list = [
-          ui.color('region', :bold),
-          ui.color('quota', :bold),
-          ui.color('limit', :bold),
-          ui.color('usage', :bold)].flatten.compact
+          ui.color("region", :bold),
+          ui.color("quota", :bold),
+          ui.color("limit", :bold),
+          ui.color("usage", :bold)].flatten.compact
         output_column_count = quotas_list.length
         result = client.execute(
           :api_method => compute.regions.list,
-          :parameters => {:project => config[:gce_project]})
+          :parameters => { :project => config[:gce_project] })
         body = MultiJson.load(result.body, :symbolize_keys => true)
         body[:items].each do |item|
           region = item[:name]

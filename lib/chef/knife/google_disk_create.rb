@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'chef/knife/google_base'
+require "chef/knife/google_base"
 
 class Chef
   class Knife
@@ -43,16 +43,16 @@ class Chef
 
       def run
         $stdout.sync = true
-        fail "Please provide the name of the new disk" if @name_args.empty?
+        raise "Please provide the name of the new disk" if @name_args.empty?
         disk_size = config[:disk_size].to_i
-        fail "Size of the persistent disk must be between 10 and 10000 GB" unless disk_size.between?(10, 10000)
+        raise "Size of the persistent disk must be between 10 and 10000 GB" unless disk_size.between?(10, 10000)
         disk_type = "zones/#{config[:gce_zone]}/diskTypes/#{config[:disk_type]}"
         result = client.execute(
           :api_method => compute.disks.insert,
-          :parameters => {:project => config[:gce_project], :zone => config[:gce_zone]},
-          :body_object => {:name => config[:name], :sizeGb => disk_size, :type => disk_type})
+          :parameters => { :project => config[:gce_project], :zone => config[:gce_zone] },
+          :body_object => { :name => config[:name], :sizeGb => disk_size, :type => disk_type })
         body = MultiJson.load(result.body, :symbolize_keys => true)
-        fail "#{body[:error][:message]}" if result.status != 200
+        raise "#{body[:error][:message]}" if result.status != 200
       rescue
         raise
       end
