@@ -194,6 +194,10 @@ class Chef::Knife::Cloud
       end
     end
 
+    def delete_disk(name)
+      connection.delete_disk(project, zone, name)
+    end
+
     def disk_type_url_for(type)
       "zones/#{zone}/diskTypes/#{type}"
     end

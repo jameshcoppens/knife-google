@@ -1,6 +1,7 @@
 #
 # Author:: Paul Rossman (<paulrossman@google.com>)
-# Copyright:: Copyright 2015 Google Inc. All Rights Reserved.
+# Author:: Chef Partner Engineering (<partnereng@chef.io>)
+# Copyright:: Copyright 2015-2016 Google Inc., Chef Software, Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,39 +16,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "chef/knife/google_base"
+require "chef/knife"
+require "chef/knife/cloud/command"
+require "chef/knife/cloud/google_service"
+require "chef/knife/cloud/google_service_helpers"
+require "chef/knife/cloud/google_service_options"
 
-class Chef
-  class Knife
-    class GoogleDiskDelete < Knife
+class Chef::Knife::Cloud
+  class GoogleDiskDelete < Command
+    include GoogleServiceHelpers
+    include GoogleServiceOptions
 
-      include Knife::GoogleBase
+    banner "knife google disk delete NAME (options)"
 
-      banner "knife google disk delete NAME (options)"
+    def validate_params!
+      # TODO
+    end
 
-      option :gce_zone,
-        :short => "-Z ZONE",
-        :long => "--gce-zone ZONE",
-        :description => "The Zone for this disk",
-        :proc => Proc.new { |key| Chef::Config[:knife][:gce_zone] = key }
-
-      def run
-        $stdout.sync = true
-        raise "Please provide the name of the disk to be deleted" if @name_args.empty?
-        ui.confirm("Delete the disk '#{config[:gce_zone]}:#{@name_args.first}'")
-        result = client.execute(
-          :api_method => compute.disks.delete,
-          :parameters => { :project => config[:gce_project], :zone => config[:gce_zone], :disk => @name_args.first })
-        body = MultiJson.load(result.body, :symbolize_keys => true)
-        if result.status == 200
-          ui.warn("Disk '#{config[:gce_zone]}:#{@name_args.first}' deleted")
-        else
-          raise "#{body[:error][:message]}"
-        end
-      rescue
-        raise
-      end
-
+    def execute_command
+      name = @name_args.first
+      service.delete_disk(name)
     end
   end
 end
