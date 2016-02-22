@@ -1,6 +1,7 @@
 #
 # Author:: Paul Rossman (<paulrossman@google.com>)
-# Copyright:: Copyright 2015 Google Inc. All Rights Reserved.
+# Author:: Chef Partner Engineering (<partnereng@chef.io>)
+# Copyright:: Copyright 2015-2016 Google Inc., Chef Software, Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,48 +16,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "chef/knife/google_base"
+require "chef/knife"
+require "chef/knife/cloud/command"
+require "chef/knife/cloud/google_service"
+require "chef/knife/cloud/google_service_helpers"
+require "chef/knife/cloud/google_service_options"
 
-class Chef
-  class Knife
-    class GoogleDiskCreate < Knife
+class Chef::Knife::Cloud
+  class GoogleDiskCreate < Command
+    include GoogleServiceHelpers
+    include GoogleServiceOptions
 
-      include Knife::GoogleBase
+    banner "knife google disk create NAME --gce-disk-size N (options)"
 
-      banner "knife google disk create NAME --gce-disk-size N (options)"
+    option :disk_size,
+      :long => "--gce-disk-size SIZE",
+      :description => "Size of the persistent disk between 10 and 10000 GB, specified in GB; default is '10' GB",
+      :default => "10"
 
-      option :gce_zone,
-        :short => "-Z ZONE",
-        :long => "--gce-zone ZONE",
-        :description => "The Zone for this disk",
-        :proc => Proc.new { |key| Chef::Config[:knife][:gce_zone] = key }
+    option :disk_type,
+      :long => "--gce-disk-type TYPE",
+      :description => "Disk type to use to create the disk. Possible values are 'pd-standard', 'pd-ssd' and 'local-ssd'; default is 'pd-standard'",
+      :default => "pd-standard"
 
-      option :disk_size,
-        :long => "--gce-disk-size SIZE",
-        :description => "Size of the persistent disk between 10 and 10000 GB, specified in GB; default is '10' GB",
-        :default => "10"
+    option :disk_source,
+      :long => "--gce-disk-source_image IMAGE_URL",
+      :description => "GCE disk source image to use when creating disk, such as projects/centos-cloud/global/images/centos-7-v20160216; optional, if not supplied, a blank disk will be created",
+      :default => nil
 
-      option :disk_type,
-        :long => "--gce-disk-type TYPE",
-        :description => "Disk type to use to create the disk. Possible values are 'pd-standard', 'pd-ssd' and 'local-ssd'; default is 'pd-standard'",
-        :default => "pd-standard"
+    def validate_params!
+      # TODO
+    end
 
-      def run
-        $stdout.sync = true
-        raise "Please provide the name of the new disk" if @name_args.empty?
-        disk_size = config[:disk_size].to_i
-        raise "Size of the persistent disk must be between 10 and 10000 GB" unless disk_size.between?(10, 10000)
-        disk_type = "zones/#{config[:gce_zone]}/diskTypes/#{config[:disk_type]}"
-        result = client.execute(
-          :api_method => compute.disks.insert,
-          :parameters => { :project => config[:gce_project], :zone => config[:gce_zone] },
-          :body_object => { :name => config[:name], :sizeGb => disk_size, :type => disk_type })
-        body = MultiJson.load(result.body, :symbolize_keys => true)
-        raise "#{body[:error][:message]}" if result.status != 200
-      rescue
-        raise
-      end
+    def execute_command
+      name = @name_args.first
+      size = locate_config_value(:disk_size)
+      type = locate_config_value(:disk_type)
+      src  = locate_config_value(:disk_source)
 
+      service.create_disk(name, size, type, src)
     end
   end
 end

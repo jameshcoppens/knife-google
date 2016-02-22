@@ -49,13 +49,48 @@ class Chef::Knife::Cloud
     end
 
     def create_server
+      # raise if not valid machine type
+
     end
 
     def delete_server
     end
 
+    def max_pages
+      # TODO: make configurable
+      20
+    end
+
+    def max_results
+      # TODO: make configurable
+      100
+    end
+
+    def paginated_results(api_method, items_method, *args)
+      items      = []
+      next_token = nil
+      loop_num   = 1
+
+      loop do
+        loop_num += 1
+
+        response = connection.send(api_method.to_sym, *args, max_results: max_results, page_token: next_token)
+        items += response.send(items_method.to_sym)
+
+        next_token = response.next_page_token
+        break if next_token.nil?
+
+        if loop_num >= max_pages
+          ui.warn("Max pages (#{max_pages} reached, but more results exist - truncating results...")
+          break
+        end
+      end
+
+      items
+    end
+
     def list_servers
-      instances = connection.list_instances(project, zone).items
+      instances = paginated_results(:list_instances, :items, project, zone)
       return [] if instances.nil?
 
       instances.each_with_object([]) do |instance, memo|
@@ -71,29 +106,29 @@ class Chef::Knife::Cloud
     end
 
     def list_zones
-      zones = connection.list_zones(project).items
-      return [] if zones.nil? || disks.empty?
+      zones = paginated_results(:list_zones, :items, project)
+      return [] if zones.nil?
 
       zones
     end
 
     def list_disks
-      disks = connection.list_disks(project, zone).items
-      return [] if disks.nil? || disks.empty?
+      disks = paginated_results(:list_disks, :items, project, zone)
+      return [] if disks.nil?
 
       disks
     end
 
     def list_regions
-      regions = connection.list_regions(project).items
-      return [] if regions.nil? || regions.empty?
+      regions = paginated_results(:list_regions, :items, project)
+      return [] if regions.nil?
 
       regions
     end
 
     def list_project_quotas
       quotas = connection.get_project(project).quotas
-      return [] if quotas.nil? || quotas.empty?
+      return [] if quotas.nil?
 
       quotas
     end
@@ -117,6 +152,54 @@ class Chef::Knife::Cloud
     end
 
     def server_summary(server, _columns_with_info = nil)
+    end
+
+    def is_valid_machine_type?(machine_type)
+    end
+
+    def project_for_image(image)
+      case image
+      when /centos/
+        "centos-cloud"
+      when /container-vm/
+        "google-containers"
+      when /coreos/
+        "coreos-cloud"
+      when /debian/
+        "debian-cloud"
+      when /opensuse-cloud/
+        "opensuse-cloud"
+      when /rhel/
+        "rhel-cloud"
+      when /sles/
+        "suse-cloud"
+      when /ubuntu/
+        "ubuntu-os-cloud"
+      else
+        raise "Unable to find a GCE project for image #{image}"
+      end
+    end
+
+    def create_disk(name, size, type, source_image=nil)
+      disk = Google::Apis::ComputeV1::Disk.new
+      disk.name    = name
+      disk.size_gb = size
+      disk.type    = disk_type_url_for(type)
+
+      connection.insert_disk(project, zone, disk, source_image: source_image)
+
+      wait_for do
+        created_disk = connection.get_disk(project, zone, name)
+        created_disk.status == 'READY'
+      end
+    end
+
+    def disk_type_url_for(type)
+      "zones/#{zone}/diskTypes/#{type}"
+    end
+
+    def wait_for(&block)
+      # TODO
     end
   end
 end
