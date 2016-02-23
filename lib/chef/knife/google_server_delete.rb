@@ -1,6 +1,7 @@
 #
 # Author:: Paul Rossman (<paulrossman@google.com>)
-# Copyright:: Copyright 2015 Google Inc. All Rights Reserved.
+# Author:: Chef Partner Engineering (<partnereng@chef.io>)
+# Copyright:: Copyright 2015-2016 Google Inc., Chef Software, Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,69 +16,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "chef/knife/google_base"
+require 'chef/knife'
+require 'chef/knife/cloud/server/delete_options'
+require 'chef/knife/cloud/server/delete_command'
+require 'chef/knife/cloud/google_service'
+require 'chef/knife/cloud/google_service_helpers'
+require 'chef/knife/cloud/google_service_options'
 
 class Chef
   class Knife
-    class GoogleServerDelete < Knife
+    class Cloud
+      class GoogleServerDelete < ServerDeleteCommand
+        include ServerDeleteOptions
+        include GoogleServiceHelpers
+        include GoogleServiceOptions
 
-      include Knife::GoogleBase
+        banner 'knife google server delete INSTANCE_NAME [INSTANCE_NAME] (options)'
 
-      deps do
-        require "chef/api_client"
       end
-
-      banner "knife google server delete SERVER [SERVER] (options)"
-
-      attr_reader :instances
-
-      option :gce_zone,
-        :short => "-Z ZONE",
-        :long => "--gce-zone ZONE",
-        :description => "The Zone for this instance",
-        :proc => Proc.new { |key| Chef::Config[:knife][:gce_zone] = key }
-
-      option :purge,
-        :short => "-P",
-        :long => "--purge",
-        :boolean => true,
-        :default => false,
-        :description => "In addition to deleting the GCE server itself, delete corresponding node and client on the Chef Server."
-
-      # Taken from knife-ec2 plugin, for rational check the following link
-      # https://github.com/opscode/knife-ec2/blob/master/lib/chef/knife/ec2_server_delete.rb#L48
-      def destroy_item(klass, name, type_name)
-        begin
-          object = klass.load(name)
-          object.destroy
-          ui.warn("Deleted #{type_name} #{name}")
-        rescue Net::HTTPServerException
-          ui.warn("Could not find a #{type_name} named #{name} to delete!")
-        end
-      end
-
-      def run
-        @name_args.each do |instance_name|
-          begin
-            ui.confirm("Delete the instance '#{config[:gce_zone]}:#{instance_name}'")
-            result = client.execute(
-              :api_method => compute.instance.delete,
-              :parameters => { :project => config[:gce_project], :zone => config[:gce_zone], :instance => instance_name })
-            ui.warn("Instance '#{config[:gce_zone]}:#{instance_name}' deleted") if result.status == 200
-          rescue
-            body = MultiJson.load(result.body, :symbolize_keys => true)
-            ui.error("#{body[:error][:message]}")
-            raise
-          end
-          if config[:purge]
-            destroy_item(Chef::Node, instance_name, "node")
-            destroy_item(Chef::ApiClient, instance_name, "client")
-          else
-            ui.warn("Corresponding node and client for #{instance_name} were not deleted and remain registered with the Chef Server")
-          end
-        end
-      end
-
     end
   end
 end

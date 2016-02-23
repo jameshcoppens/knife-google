@@ -28,6 +28,30 @@ class Chef::Knife::Cloud
           :short => "-Z ZONE",
           :long => "--gce-zone ZONE",
           :description => "Name of the Google Compute Engine zone to use"
+
+        option :gce_max_pages,
+          :long => "--gce-max-pages NUMPAGES",
+          :description => "Maximum number of pages to request for paginated listing requests, defaults to 20",
+          :default => 20,
+          :proc => proc { |pages| pages.to_i }
+
+        option :gce_max_page_size,
+          :long => "--gce-max-page-size NUMPAGES",
+          :description => "Maximum number of items per page to request for paginated listing requests, defaults to 100",
+          :default => 100,
+          :proc => proc { |items| items.to_i }
+
+        option :request_refresh_rate,
+          long:        '--request-refresh-rate SECS',
+          description: 'Number of seconds to sleep between each check of the request status, defaults to 2',
+          default:     2,
+          proc:        proc { |secs| secs.to_i }
+
+        option :request_timeout,
+          long:        '--request-timeout SECS',
+          description: 'Number of seconds to wait for a request to complete, defaults to 600',
+          default:     600,
+          proc:        proc { |secs| secs.to_i }
       end
     end
   end

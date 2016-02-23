@@ -30,8 +30,12 @@ class Chef::Knife::Cloud
     attr_reader :project, :zone
 
     def initialize(options = {})
-      @project = options[:project]
-      @zone    = options[:zone]
+      @project       = options[:project]
+      @zone          = options[:zone]
+      @wait_time     = options[:wait_time]
+      @refresh_rate  = options[:refresh_rate]
+      @max_pages     = options[:max_pages]
+      @max_page_size = options[:max_page_size]
     end
 
     def connection
@@ -56,20 +60,119 @@ class Chef::Knife::Cloud
       validate_server_create_options!(options)
 
       ui.msg("Creating instance...")
-      instance = create_instance(options)
+
+      instance_object = instance_object_for(options)
+      wait_for_operation(connection.insert_instance(project, zone, instance_object))
+      wait_for_status('RUNNING') { get_server(options[:name]) }
+
       ui.msg("Instance created!")
 
-      instance
+      get_server(options[:name])
     end
 
-    def delete_server
+    def delete_server(instance_name)
+      begin
+        instance = get_server(instance_name)
+      rescue Google::Apis::ClientError
+        ui.warn("Unable to locate instance #{instance_name} in project #{project}, zone #{zone}")
+        return
+      end
+
+      server_summary(instance)
+      ui.confirm('Do you really want to delete this instance')
+
+      ui.msg("Deleting instance #{instance_name}...")
+
+      wait_for_operation(connection.delete_instance(project, zone, instance_name))
+
+      ui.msg("Instance #{instance_name} deleted successfully.")
+    end
+
+    def get_server(instance_name)
+      connection.get_instance(project, zone, instance_name)
+    end
+
+    def create_disk(name, size, type, source_image=nil)
+      disk = Google::Apis::ComputeV1::Disk.new
+      disk.name    = name
+      disk.size_gb = size
+      disk.type    = disk_type_url_for(type)
+
+      ui.msg("Creating a #{size} GB disk named #{name}...")
+
+      wait_for_operation(connection.insert_disk(project, zone, disk, source_image: source_image))
+
+      ui.msg("Waiting for disk to be ready...")
+
+      wait_for_status("READY") { connection.get_disk(project, zone, name) }
+
+      ui.msg("Disk created successfully.")
+    end
+
+    def delete_disk(name)
+      begin
+        connection.get_disk(project, zone, name)
+      rescue Google::Apis::ClientError
+        ui.warn("Unable to locate disk #{name} in project #{project}, zone #{zone}")
+        return
+      end
+
+      ui.confirm("Do you really want to delete disk #{name}")
+
+      ui.msg("Deleting disk #{name}...")
+      wait_for_operation(connection.delete_disk(project, zone, name))
+      ui.msg("Disk #{name} deleted successfully.")
+    end
+
+    def list_servers
+      instances = paginated_results(:list_instances, :items, project, zone)
+      return [] if instances.nil?
+
+      instances.each_with_object([]) do |instance, memo|
+        memo << OpenStruct.new(
+          name:         instance.name,
+          status:       instance.status,
+          machine_type: machine_type_for(instance),
+          network:      network_for(instance),
+          private_ip:   private_ip_for(instance),
+          public_ip:    public_ip_for(instance)
+        )
+      end
+    end
+
+    def list_zones
+      zones = paginated_results(:list_zones, :items, project)
+      return [] if zones.nil?
+
+      zones
+    end
+
+    def list_disks
+      disks = paginated_results(:list_disks, :items, project, zone)
+      return [] if disks.nil?
+
+      disks
+    end
+
+    def list_regions
+      regions = paginated_results(:list_regions, :items, project)
+      return [] if regions.nil?
+
+      regions
+    end
+
+    def list_project_quotas
+      quotas = connection.get_project(project).quotas
+      return [] if quotas.nil?
+
+      quotas
     end
 
     def validate_server_create_options!(options)
       raise "Invalid machine type: #{options[:machine_type]}" unless valid_machine_type?(options[:machine_type])
       raise "Invalid network: #{options[:network]}" unless valid_network?(options[:network])
       raise "Invalid Public IP setting: #{options[:public_ip]}" unless valid_public_ip_setting?(options[:public_ip])
-      raise "Invalid image: #{options[:image]}" unless valid_image?(options[:image], options[:image_project])
+      raise "Invalid image: #{options[:image]} - check your image name, or set an image project if needed" if image_search_for(options[:image], options[:image_project]).nil?
       raise "Invalid machine type: #{options[:machine_type]}" unless valid_machine_type?(options[:machine_type])
     end
 
@@ -111,21 +214,12 @@ class Chef::Knife::Cloud
       true
     end
 
-    def valid_image?(image, image_project)
-      return false if image.nil?
-      project_name = image_project.nil? ? project : image_project
-
-      check_api_call { connection.get_image(project_name, image) }
-    end
-
-    def create_instance(options)
-      instance_object = instance_object_for(options)
-      operation = connection.insert_instance(project, zone, instance_object)
-
-      wait_for_operation(operation.name)
-      wait_for_status('RUNNING') { connection.get_instance(project, zone, options[:name]) }
-
-      connection.get_instance(project, zone, options[:name])
+    def image_exist?(image_project, image_name)
+      connection.get_image(image_project, image_name)
+    rescue Google::Apis::ClientError
+      false
+    else
+      true
     end
 
     def instance_object_for(options)
@@ -164,18 +258,36 @@ class Chef::Knife::Cloud
       params = Google::Apis::ComputeV1::AttachedDiskInitializeParams.new
 
       disk.boot           = true
+      disk.auto_delete    = options[:boot_disk_autodelete]
       params.disk_name    = boot_disk_name_for(options)
       params.disk_size_gb = options[:boot_disk_size]
       params.disk_type    = disk_type_url_for(options[:boot_disk_ssd] ? "pd-ssd" : "pd-standard")
-      params.source_image = disk_image_url_for(options[:image], options[:image_project])
+      params.source_image = image_search_for(options[:image], options[:image_project])
 
       disk.initialize_params = params
       disk
     end
 
-    def disk_image_url_for(image, image_project)
-      project_name = image_project.nil? ? project : image_project
-      "projects/#{project_name}/global/images/#{image}"
+    def image_search_for(image, image_project)
+      # if the user provided an image_project, assume they want it, no questions asked
+      return image_url_for(image, image_project) unless image_project.nil?
+
+      # no image project has been provided. We'll first check the user's project for the image.
+      url = image_url_for(image, project)
+      return url unless url.nil?
+
+      # Image not found in user's project. Is there a public project this image might exist in?
+      public_project = public_project_for_image(image)
+      if public_project
+        return image_url_for(image, public_project)
+      end
+
+      # No image in user's project or public project, so it doesn't exist.
+      nil
+    end
+
+    def image_url_for(image, image_project)
+      return "projects/#{image_project}/global/images/#{image}" if image_exist?(image_project, image)
     end
 
     def boot_disk_name_for(options)
@@ -187,6 +299,7 @@ class Chef::Knife::Cloud
     end
 
     def instance_metadata_for(metadata)
+      # TODO
       # Google::Apis::ComputeV1::Metadata
     end
 
@@ -226,6 +339,7 @@ class Chef::Knife::Cloud
     end
 
     def instance_service_accounts_for(options)
+      # TODO
       # Google::Apis::ComputeV1::ServiceAccount
     end
 
@@ -235,95 +349,28 @@ class Chef::Knife::Cloud
       false
     end
 
-    def max_pages
-      # TODO: make configurable
-      20
-    end
-
-    def max_results
-      # TODO: make configurable
-      100
-    end
-
-    def paginated_results(api_method, items_method, *args)
-      items      = []
-      next_token = nil
-      loop_num   = 1
-
-      loop do
-        loop_num += 1
-
-        response = connection.send(api_method.to_sym, *args, max_results: max_results, page_token: next_token)
-        items += response.send(items_method.to_sym)
-
-        next_token = response.next_page_token
-        break if next_token.nil?
-
-        if loop_num >= max_pages
-          ui.warn("Max pages (#{max_pages} reached, but more results exist - truncating results...")
-          break
-        end
-      end
-
-      items
-    end
-
-    def list_servers
-      instances = paginated_results(:list_instances, :items, project, zone)
-      return [] if instances.nil?
-
-      instances.each_with_object([]) do |instance, memo|
-        memo << OpenStruct.new(
-          name:         instance.name,
-          status:       instance.status,
-          machine_type: instance.machine_type.split("/").last,
-          network:      instance_network(instance),
-          private_ip:   private_ip_for(instance),
-          public_ip:    public_ip_for(instance)
-        )
-      end
-    end
-
-    def list_zones
-      zones = paginated_results(:list_zones, :items, project)
-      return [] if zones.nil?
-
-      zones
-    end
-
-    def list_disks
-      disks = paginated_results(:list_disks, :items, project, zone)
-      return [] if disks.nil?
-
-      disks
-    end
-
-    def list_regions
-      regions = paginated_results(:list_regions, :items, project)
-      return [] if regions.nil?
-
-      regions
-    end
-
-    def list_project_quotas
-      quotas = connection.get_project(project).quotas
-      return [] if quotas.nil?
-
-      quotas
-    end
-
-    def instance_network(instance)
+    def network_for(instance)
       instance.network_interfaces.first.network.split("/").last
     rescue NoMethodError
       "unknown"
     end
 
-    def server_summary(server, _columns_with_info = nil)
-      # TODO
-      #msg_pair('Server Label', server.label)
+    def machine_type_for(instance)
+      instance.machine_type.split("/").last
     end
 
-    def project_for_image(image)
+    def server_summary(server, _columns_with_info = nil)
+      msg_pair("Instance Name", server.name)
+      msg_pair("Status", server.status)
+      msg_pair("Machine Type", machine_type_for(server))
+      msg_pair("Project", project)
+      msg_pair("Zone", zone)
+      msg_pair("Network", network_for(server))
+      msg_pair("Private IP", private_ip_for(server))
+      msg_pair("Public IP", public_ip_for(server))
+    end
+
+    def public_project_for_image(image)
       case image
       when /centos/
         "centos-cloud"
@@ -341,49 +388,34 @@ class Chef::Knife::Cloud
         "suse-cloud"
       when /ubuntu/
         "ubuntu-os-cloud"
-      else
-        raise "Unable to find a GCE project for image #{image}"
       end
-    end
-
-    def create_disk(name, size, type, source_image=nil)
-      disk = Google::Apis::ComputeV1::Disk.new
-      disk.name    = name
-      disk.size_gb = size
-      disk.type    = disk_type_url_for(type)
-
-      ui.msg("Creating a #{size} GB disk named #{name}...")
-
-      operation = connection.insert_disk(project, zone, disk, source_image: source_image)
-      wait_for_operation(operation.name)
-
-      ui.msg("Waiting for disk to be ready...")
-
-      wait_for_status("READY") { connection.get_disk(project, zone, name) }
-
-      ui.msg("Disk created successfully.")
-    end
-
-    def delete_disk(name)
-      connection.delete_disk(project, zone, name)
     end
 
     def disk_type_url_for(type)
       "zones/#{zone}/diskTypes/#{type}"
     end
 
-    def wait_for(&block)
-      # TODO
-    end
+    def paginated_results(api_method, items_method, *args)
+      items      = []
+      next_token = nil
+      loop_num   = 1
 
-    def wait_time
-      # TODO: make configurable
-      600
-    end
+      loop do
+        loop_num += 1
 
-    def refresh_time
-      # TODO: make configurable
-      2
+        response = connection.send(api_method.to_sym, *args, max_results: max_page_size, page_token: next_token)
+        items += response.send(items_method.to_sym)
+
+        next_token = response.next_page_token
+        break if next_token.nil?
+
+        if loop_num >= max_pages
+          ui.warn("Max pages (#{max_pages} reached, but more results exist - truncating results...")
+          break
+        end
+      end
+
+      items
     end
 
     def wait_for_status(requested_status, &block)
@@ -418,37 +450,33 @@ class Chef::Knife::Cloud
       end
     end
 
-    def zone_operation(operation)
-      connection.get_zone_operation(project, zone, operation)
-    end
-
     def wait_for_operation(operation)
-      wait_for_status("DONE") { zone_operation(operation) }
+      operation_name = operation.name
 
-      if operation_error?(operation)
-        operation_errors(operation).each do |error|
+      wait_for_status("DONE") { zone_operation(operation_name) }
+
+      if operation_error?(operation_name)
+        operation_errors(operation_name).each do |error|
           ui.error("#{ui.color(error.code, :bold)}: #{error.message}")
         end
 
-        raise "Operation #{operation} failed."
+        raise "Operation #{operation_name} failed."
       end
     end
 
-    def operation_error?(operation)
-      !zone_operation(operation).error.nil?
+    def zone_operation(operation_name)
+      connection.get_zone_operation(project, zone, operation_name)
     end
 
-    def operation_errors(operation)
-      return [] if zone_operation(operation).error.nil?
-
-      zone_operation(operation).error.errors
+    def operation_error?(operation_name)
+      !zone_operation(operation_name).error.nil?
     end
 
-    def server_creation_object_for
-      # build it, adding a serviceAccounts section if there are any scopes defined
-      #:serviceAccounts => [{ "kind" => 'compute#serviceAccount',
-      #                       "email" => config[:service_account_name],
-      #                       "scopes" => config[:service_account_scopes] }],
+    def operation_errors(operation_name)
+      operation = zone_operation(operation_name)
+      return [] if operation.error.nil?
+
+      operation.error.errors
     end
   end
 end
