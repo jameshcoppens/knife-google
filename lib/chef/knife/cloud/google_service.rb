@@ -56,14 +56,14 @@ class Chef::Knife::Cloud
       )
     end
 
-    def create_server(options={})
+    def create_server(options = {})
       validate_server_create_options!(options)
 
       ui.msg("Creating instance...")
 
       instance_object = instance_object_for(options)
       wait_for_operation(connection.insert_instance(project, zone, instance_object))
-      wait_for_status('RUNNING') { get_server(options[:name]) }
+      wait_for_status("RUNNING") { get_server(options[:name]) }
 
       ui.msg("Instance created!")
 
@@ -79,7 +79,7 @@ class Chef::Knife::Cloud
       end
 
       server_summary(instance)
-      ui.confirm('Do you really want to delete this instance')
+      ui.confirm("Do you really want to delete this instance")
 
       ui.msg("Deleting instance #{instance_name}...")
 
@@ -92,7 +92,7 @@ class Chef::Knife::Cloud
       connection.get_instance(project, zone, instance_name)
     end
 
-    def create_disk(name, size, type, source_image=nil)
+    def create_disk(name, size, type, source_image = nil)
       disk = Google::Apis::ComputeV1::Disk.new
       disk.name    = name
       disk.size_gb = size
@@ -419,7 +419,7 @@ class Chef::Knife::Cloud
     end
 
     def wait_for_status(requested_status, &block)
-      last_status = ''
+      last_status = ""
 
       begin
         Timeout.timeout(wait_time) do
@@ -433,7 +433,7 @@ class Chef::Knife::Cloud
             end
 
             if last_status == current_status
-              print '.'
+              print "."
             else
               last_status = current_status
               print "\n"
@@ -444,7 +444,7 @@ class Chef::Knife::Cloud
           end
         end
       rescue Timeout::Error
-        ui.msg('')
+        ui.msg("")
         ui.error("Request did not complete in #{wait_time} seconds. Check the Google Cloud Console for more info.")
         exit 1
       end

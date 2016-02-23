@@ -16,12 +16,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'chef/knife'
-require 'chef/knife/cloud/server/create_command'
-require 'chef/knife/cloud/server/create_options'
-require 'chef/knife/cloud/google_service'
-require 'chef/knife/cloud/google_service_helpers'
-require 'chef/knife/cloud/google_service_options'
+require "chef/knife"
+require "chef/knife/cloud/server/create_command"
+require "chef/knife/cloud/server/create_options"
+require "chef/knife/cloud/google_service"
+require "chef/knife/cloud/google_service_helpers"
+require "chef/knife/cloud/google_service_options"
 
 class Chef::Knife::Cloud
   class GoogleServerCreate < ServerCreateCommand

@@ -16,12 +16,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'chef/knife'
-require 'chef/knife/cloud/server/delete_options'
-require 'chef/knife/cloud/server/delete_command'
-require 'chef/knife/cloud/google_service'
-require 'chef/knife/cloud/google_service_helpers'
-require 'chef/knife/cloud/google_service_options'
+require "chef/knife"
+require "chef/knife/cloud/server/delete_options"
+require "chef/knife/cloud/server/delete_command"
+require "chef/knife/cloud/google_service"
+require "chef/knife/cloud/google_service_helpers"
+require "chef/knife/cloud/google_service_options"
 
 class Chef
   class Knife
@@ -31,7 +31,7 @@ class Chef
         include GoogleServiceHelpers
         include GoogleServiceOptions
 
-        banner 'knife google server delete INSTANCE_NAME [INSTANCE_NAME] (options)'
+        banner "knife google server delete INSTANCE_NAME [INSTANCE_NAME] (options)"
 
       end
     end

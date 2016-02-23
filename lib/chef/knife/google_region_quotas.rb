@@ -60,7 +60,7 @@ class Chef::Knife::Cloud
         ui.color("Usage", :bold)
       ]
     end
-    
+
     def format_name(name)
       name.split("_").map { |x| x.capitalize }.join(" ")
     end
