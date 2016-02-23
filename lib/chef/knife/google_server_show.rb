@@ -33,16 +33,9 @@ class Chef
         banner "knife google server show INSTANCE_NAME (options)"
 
         def validate_params!
-          if @name_args.empty?
-            ui.error("You must supply an instnace name for a server to display.")
-            exit 1
-          end
-
-          if @name_args.size > 1
-            ui.error("You may only supply one instance name.")
-            exit 1
-          end
-
+          check_for_missing_config_values!
+          raise "You must supply and instance name to display" if @name_args.empty?
+          raise "You may only supply one instance name" if @name_args.size > 1
           super
         end
       end

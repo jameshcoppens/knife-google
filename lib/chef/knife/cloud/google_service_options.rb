@@ -21,25 +21,25 @@ class Chef::Knife::Cloud
     def self.included(includer)
       includer.class_eval do
         option :gce_project,
-          :long => "--gce-project PROJECT",
-          :description => "Name of the Google Cloud project to use"
+          long:        "--gce-project PROJECT",
+          description: "Name of the Google Cloud project to use"
 
         option :gce_zone,
-          :short => "-Z ZONE",
-          :long => "--gce-zone ZONE",
-          :description => "Name of the Google Compute Engine zone to use"
+          short:       "-Z ZONE",
+          long:        "--gce-zone ZONE",
+          description: "Name of the Google Compute Engine zone to use"
 
         option :gce_max_pages,
-          :long => "--gce-max-pages NUMPAGES",
-          :description => "Maximum number of pages to request for paginated listing requests, defaults to 20",
-          :default => 20,
-          :proc => proc { |pages| pages.to_i }
+          long:        "--gce-max-pages NUMPAGES",
+          description: "Maximum number of pages to request for paginated listing requests, defaults to 20",
+          default:     20,
+          proc:        proc { |pages| pages.to_i }
 
         option :gce_max_page_size,
-          :long => "--gce-max-page-size NUMPAGES",
-          :description => "Maximum number of items per page to request for paginated listing requests, defaults to 100",
-          :default => 100,
-          :proc => proc { |items| items.to_i }
+          long:        "--gce-max-page-size NUMPAGES",
+          description: "Maximum number of items per page to request for paginated listing requests, defaults to 100",
+          default:     100,
+          proc:        proc { |items| items.to_i }
 
         option :request_refresh_rate,
           long:        "--request-refresh-rate SECS",

@@ -29,6 +29,11 @@ class Chef::Knife::Cloud
 
     banner "knife google region quotas"
 
+    def validate_params!
+      check_for_missing_config_values!
+      super
+    end
+
     def execute_command
       service.list_regions.each do |region|
         ui.msg(ui.color("Region: #{region.name}", :bold))

@@ -29,6 +29,11 @@ class Chef::Knife::Cloud
 
     banner "knife google project quotas"
 
+    def validate_params!
+      check_for_missing_config_values!
+      super
+    end
+
     def before_exec_command
       @columns_with_info = [
         { label: "Quota", key: "metric", value_callback: method(:format_name) },

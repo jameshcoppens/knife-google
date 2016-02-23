@@ -33,6 +33,10 @@ class Chef
 
         banner "knife google server delete INSTANCE_NAME [INSTANCE_NAME] (options)"
 
+        def validate_params!
+          check_for_missing_config_values!
+          super
+        end
       end
     end
   end

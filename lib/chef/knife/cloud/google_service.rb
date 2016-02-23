@@ -422,7 +422,11 @@ class Chef::Knife::Cloud
       loop do
         loop_num += 1
 
-        response = connection.send(api_method.to_sym, *args, max_results: max_page_size, page_token: next_token)
+        response       = connection.send(api_method.to_sym, *args, max_results: max_page_size, page_token: next_token)
+        response_items = response.send(items_method.to_sym)
+
+        break if response_items.nil?
+
         items += response.send(items_method.to_sym)
 
         next_token = response.next_page_token

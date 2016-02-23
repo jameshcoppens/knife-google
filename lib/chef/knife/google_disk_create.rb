@@ -32,7 +32,8 @@ class Chef::Knife::Cloud
     option :disk_size,
       long:        "--gce-disk-size SIZE",
       description: "Size of the persistent disk between 10 and 10000 GB, specified in GB; default is '10' GB",
-      default:     "10"
+      default:     10,
+      proc:        proc { |size| size.to_i }
 
     option :disk_type,
       long:        "--gce-disk-type TYPE",
@@ -45,7 +46,10 @@ class Chef::Knife::Cloud
       default:     nil
 
     def validate_params!
-      # TODO
+      check_for_missing_config_values!(:disk_size, :disk_type)
+      raise "Please specify a disk name." unless @name_args.first
+      raise "Disk size must be between 10 and 10,000" unless valid_disk_size?(locate_config_value(:disk_size))
+      super
     end
 
     def execute_command

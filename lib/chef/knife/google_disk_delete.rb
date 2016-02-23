@@ -27,15 +27,16 @@ class Chef::Knife::Cloud
     include GoogleServiceHelpers
     include GoogleServiceOptions
 
-    banner "knife google disk delete NAME (options)"
+    banner "knife google disk delete NAME [NAME] (options)"
 
     def validate_params!
-      # TODO
+      check_for_missing_config_values!
+      raise "You must specify at least one disk to delete." if @name_args.empty?
+      super
     end
 
     def execute_command
-      name = @name_args.first
-      service.delete_disk(name)
+      @name_args.each { |disk| service.delete_disk(disk) }
     end
   end
 end

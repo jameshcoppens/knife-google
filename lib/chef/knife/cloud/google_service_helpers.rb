@@ -18,6 +18,8 @@
 
 class Chef::Knife::Cloud
   module GoogleServiceHelpers
+    REQUIRED_KEYS = [:gce_project, :gce_zone]
+
     def create_service_instance
       Chef::Knife::Cloud::GoogleService.new(
         project:       locate_config_value(:gce_project),
@@ -30,7 +32,9 @@ class Chef::Knife::Cloud
     end
 
     def check_for_missing_config_values!(*keys)
-      missing = keys.select { |x| locate_config_value(x).nil? }
+      keys_to_check = REQUIRED_KEYS + keys
+
+      missing = keys_to_check.select { |x| locate_config_value(x).nil? }
 
       unless missing.empty?
         ui.error("The following required parameters are missing: #{missing.join(', ')}")
@@ -48,6 +52,10 @@ class Chef::Knife::Cloud
       server.network_interfaces.first.access_configs.first.nat_ip
     rescue NoMethodError
       "unknown"
+    end
+
+    def valid_disk_size?(size)
+      size.between?(10, 10_000)
     end
   end
 end
