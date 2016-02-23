@@ -304,12 +304,12 @@ class Chef::Knife::Cloud
 
       metadata_obj = Google::Apis::ComputeV1::Metadata.new
       metadata_obj.items = metadata.each_with_object([]) do |(k, v), memo|
-                             metadata_item       = Google::Apis::ComputeV1::Metadata::Item.new
-                             metadata_item.key   = k
-                             metadata_item.value = v
+        metadata_item       = Google::Apis::ComputeV1::Metadata::Item.new
+        metadata_item.key   = k
+        metadata_item.value = v
 
-                             memo << metadata_item
-                           end
+        memo << metadata_item
+      end
 
       metadata_obj
     end
@@ -362,7 +362,7 @@ class Chef::Knife::Cloud
 
     def instance_tags_for(tags)
       return if tags.nil? || tags.empty?
-      
+
       tag_obj = Google::Apis::ComputeV1::Tags.new
       tag_obj.items = tags
 
