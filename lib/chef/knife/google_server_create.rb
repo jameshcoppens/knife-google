@@ -131,11 +131,6 @@ class Chef::Knife::Cloud
       description: "EPHEMERAL or static IP address or NONE; default is 'EPHEMERAL'",
       default:     "EPHEMERAL"
 
-    option :compute_user_data,
-      long:        "--user-data USER_DATA_FILE",
-      short:       "-u USER_DATA_FILE",
-      description: "The Google Compute User Data file to provision the server with"
-
     def before_exec_command
       super
 
@@ -156,7 +151,6 @@ class Chef::Knife::Cloud
         machine_type:           locate_config_value(:machine_type),
         service_account_scopes: locate_config_value(:service_account_scopes),
         service_account_name:   locate_config_value(:service_account_name),
-        compute_user_data:      locate_config_value(:compute_user_data),
         metadata:               metadata,
         tags:                   locate_config_value(:tags)
       }
