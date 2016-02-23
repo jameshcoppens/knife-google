@@ -33,5 +33,17 @@ class Chef::Knife::Cloud
         exit(1)
       end
     end
+
+    def private_ip_for(server)
+      server.network_interfaces.first.network_ip
+    rescue NoMethodError
+      "unknown"
+    end
+
+    def public_ip_for(server)
+      server.network_interfaces.first.access_configs.first.nat_ip
+    rescue NoMethodError
+      "unknown"
+    end
   end
 end
