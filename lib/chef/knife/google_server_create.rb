@@ -32,109 +32,109 @@ class Chef::Knife::Cloud
     banner "knife google server create NAME -m MACHINE_TYPE -I IMAGE (options)"
 
     option :machine_type,
-      :short => "-m MACHINE_TYPE",
-      :long => "--gce-machine-type MACHINE_TYPE",
-      :description => "The machine type of server (n1-highcpu-2, n1-highcpu-2-d, etc)"
+      short:       "-m MACHINE_TYPE",
+      long:        "--gce-machine-type MACHINE_TYPE",
+      description: "The machine type of server (n1-highcpu-2, n1-highcpu-2-d, etc)"
 
     option :image,
-      :short => "-I IMAGE",
-      :long => "--gce-image IMAGE",
-      :description => "The Image for the server"
+      short:       "-I IMAGE",
+      long:        "--gce-image IMAGE",
+      description: "The Image for the server"
 
     option :image_project,
-      :long => "--gce-image-project IMAGE_PROJECT",
-      :description => "The project-id containing the Image (debian-cloud, centos-cloud, etc)"
+      long:        "--gce-image-project IMAGE_PROJECT",
+      description: "The project-id containing the Image (debian-cloud, centos-cloud, etc)"
 
     option :boot_disk_name,
-      :long => "--gce-boot-disk-name DISK",
-      :description => "Name of persistent boot disk; default is to use the server name"
+      long:        "--gce-boot-disk-name DISK",
+      description: "Name of persistent boot disk; default is to use the server name"
 
     option :boot_disk_size,
-      :long => "--gce-boot-disk-size SIZE",
-      :description => "Size of the persistent boot disk between 10 and 10000 GB, specified in GB; default is '10' GB",
-      :default => "10"
+      long:        "--gce-boot-disk-size SIZE",
+      description: "Size of the persistent boot disk between 10 and 10000 GB, specified in GB; default is '10' GB",
+      default:     "10"
 
     option :boot_disk_ssd,
-      :long => "--[no-]gce-boot-disk-ssd",
-      :description => "Use pd-ssd boot disk; default is pd-standard boot disk",
-      :boolean => true,
-      :default => false
+      long:        "--[no-]gce-boot-disk-ssd",
+      description: "Use pd-ssd boot disk; default is pd-standard boot disk",
+      boolean:     true,
+      default:     false
 
     option :boot_disk_autodelete,
-      :long => "--[no-]gce-boot-disk-autodelete",
-      :description => "Delete boot disk when server is deleted.",
-      :boolean => true,
-      :default => true
+      long:        "--[no-]gce-boot-disk-autodelete",
+      description: "Delete boot disk when server is deleted.",
+      boolean:     true,
+      default:     true
 
     option :additional_disks,
-      :long => "--gce-additional-disks DISKS",
-      :short => "-D DISKS",
-      :description => "Names of additional disks, comma-separated, to attach to this server (NOTE: this will not create them)",
-      :proc => Proc.new { |disks| disks.split(",") },
-      :default => []
+      long:        "--gce-additional-disks DISKS",
+      short:       "-D DISKS",
+      description: "Names of additional disks, comma-separated, to attach to this server (NOTE: this will not create them)",
+      proc:        Proc.new { |disks| disks.split(",") },
+      default:     []
 
     option :auto_restart,
-      :long => "--[no-]gce-auto-server-restart",
-      :description => "GCE can automatically restart your server if it is terminated for non-user-initiated reasons; enabled by default.",
-      :boolean => true,
-      :default => true
+      long:        "--[no-]gce-auto-server-restart",
+      description: "GCE can automatically restart your server if it is terminated for non-user-initiated reasons; enabled by default.",
+      boolean:     true,
+      default:     true
 
     option :auto_migrate,
-      :long => "--[no-]gce-auto-server-migrate",
-      :description => "GCE can migrate your server to other hardware without downtime prior to periodic infrastructure maintenance, otherwise the server is terminated; enabled by default.",
-      :boolean => true,
-      :default => true
+      long:        "--[no-]gce-auto-server-migrate",
+      description: "GCE can migrate your server to other hardware without downtime prior to periodic infrastructure maintenance, otherwise the server is terminated; enabled by default.",
+      boolean:     true,
+      default:     true
 
     option :can_ip_forward,
-      :long => "--[no-]gce-can-ip-forward",
-      :description => "Allow server network forwarding",
-      :boolean => true,
-      :default => false
+      long:        "--[no-]gce-can-ip-forward",
+      description: "Allow server network forwarding",
+      boolean:     true,
+      default:     false
 
     option :network,
-      :long => "--gce-network NETWORK",
-      :description => "The network for this server; default is 'default'",
-      :default => "default"
+      long:        "--gce-network NETWORK",
+      description: "The network for this server; default is 'default'",
+      default:     "default"
 
     option :tags,
-      :short => "-T TAG1,TAG2,TAG3",
-      :long => "--gce-tags TAG1,TAG2,TAG3",
-      :description => "Tags for this server",
-      :proc => Proc.new { |tags| tags.split(",") },
-      :default => []
+      short:       "-T TAG1,TAG2,TAG3",
+      long:        "--gce-tags TAG1,TAG2,TAG3",
+      description: "Tags for this server",
+      proc:        Proc.new { |tags| tags.split(",") },
+      default:     []
 
     option :metadata,
-      :long => "--gce-metadata Key=Value[,Key=Value...]",
-      :description => "Additional metadata for this server",
-      :proc => Proc.new { |metadata| metadata.split(",") },
-      :default => []
+      long:        "--gce-metadata Key=Value[,Key=Value...]",
+      description: "Additional metadata for this server",
+      proc:        Proc.new { |metadata| metadata.split(",") },
+      default:     []
 
     option :service_account_scopes,
-      :long => "--gce-service-account-scopes SCOPE1,SCOPE2,SCOPE3",
-      :proc => Proc.new { |service_account_scopes| service_account_scopes.split(",") },
-      :description => "Service account scopes for this server",
-      :default => []
+      long:        "--gce-service-account-scopes SCOPE1,SCOPE2,SCOPE3",
+      proc:        Proc.new { |service_account_scopes| service_account_scopes.split(",") },
+      description: "Service account scopes for this server",
+      default:     []
 
     option :service_account_name,
-      :long => "--gce-service-account-name NAME",
-      :description => "Service account name for this server, typically in the form of '123845678986@project.gserviceaccount.com'; default is 'default'",
-      :default => "default"
+      long:        "--gce-service-account-name NAME",
+      description: "Service account name for this server, typically in the form of '123845678986@project.gserviceaccount.com'; default is 'default'",
+      default:     "default"
 
     option :use_private_ip,
-      :long => "--gce-use-private-ip",
-      :description => "if used, Chef will attempt to bootstrap the device using the private IP; default is disabled (use public IP)",
-      :boolean => true,
-      :default => false
+      long:        "--gce-use-private-ip",
+      description: "if used, Chef will attempt to bootstrap the device using the private IP; default is disabled (use public IP)",
+      boolean:     true,
+      default:     false
 
     option :public_ip,
-      :long => "--gce-public-ip IP_ADDRESS",
-      :description => "EPHEMERAL or static IP address or NONE; default is 'EPHEMERAL'",
-      :default => "EPHEMERAL"
+      long:        "--gce-public-ip IP_ADDRESS",
+      description: "EPHEMERAL or static IP address or NONE; default is 'EPHEMERAL'",
+      default:     "EPHEMERAL"
 
     option :compute_user_data,
-      :long => "--user-data USER_DATA_FILE",
-      :short => "-u USER_DATA_FILE",
-      :description => "The Google Compute User Data file to provision the server with"
+      long:        "--user-data USER_DATA_FILE",
+      short:       "-u USER_DATA_FILE",
+      description: "The Google Compute User Data file to provision the server with"
 
     def before_exec_command
       super

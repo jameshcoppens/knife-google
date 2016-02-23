@@ -30,19 +30,19 @@ class Chef::Knife::Cloud
     banner "knife google disk create NAME --gce-disk-size N (options)"
 
     option :disk_size,
-      :long => "--gce-disk-size SIZE",
-      :description => "Size of the persistent disk between 10 and 10000 GB, specified in GB; default is '10' GB",
-      :default => "10"
+      long:        "--gce-disk-size SIZE",
+      description: "Size of the persistent disk between 10 and 10000 GB, specified in GB; default is '10' GB",
+      default:     "10"
 
     option :disk_type,
-      :long => "--gce-disk-type TYPE",
-      :description => "Disk type to use to create the disk. Possible values are 'pd-standard', 'pd-ssd' and 'local-ssd'; default is 'pd-standard'",
-      :default => "pd-standard"
+      long:        "--gce-disk-type TYPE",
+      description: "Disk type to use to create the disk. Possible values are 'pd-standard', 'pd-ssd' and 'local-ssd'; default is 'pd-standard'",
+      default:     "pd-standard"
 
     option :disk_source,
-      :long => "--gce-disk-source_image IMAGE_URL",
-      :description => "GCE disk source image to use when creating disk, such as projects/centos-cloud/global/images/centos-7-v20160216; optional, if not supplied, a blank disk will be created",
-      :default => nil
+      long:        "--gce-disk-source_image IMAGE_URL",
+      description: "GCE disk source image to use when creating disk, such as projects/centos-cloud/global/images/centos-7-v20160216; optional, if not supplied, a blank disk will be created",
+      default:     nil
 
     def validate_params!
       # TODO
