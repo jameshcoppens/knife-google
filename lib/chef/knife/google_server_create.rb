@@ -115,7 +115,6 @@ class Chef::Knife::Cloud
       :description => "Service account scopes for this server",
       :default => []
 
-    # GCE documentation uses the term 'service account name', the api uses the term 'email'
     option :service_account_name,
       :long => "--gce-service-account-name NAME",
       :description => "Service account name for this server, typically in the form of '123845678986@project.gserviceaccount.com'; default is 'default'",

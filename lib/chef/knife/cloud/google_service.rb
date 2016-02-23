@@ -231,7 +231,7 @@ class Chef::Knife::Cloud
       inst_obj.metadata           = instance_metadata_for(options[:metadata])
       inst_obj.network_interfaces = instance_network_interfaces_for(options)
       inst_obj.scheduling         = instance_scheduling_for(options)
-      inst_obj.service_accounts   = instance_service_accounts_for(options) if use_service_accounts?(options)
+      inst_obj.service_accounts   = instance_service_accounts_for(options) unless instance_service_accounts_for(options).nil?
       inst_obj.tags               = instance_tags_for(options[:tags])
 
       inst_obj
@@ -350,14 +350,13 @@ class Chef::Knife::Cloud
     end
 
     def instance_service_accounts_for(options)
-      # TODO
-      # Google::Apis::ComputeV1::ServiceAccount
-    end
+      return if options[:service_account_scopes].nil? || options[:service_account_scopes].empty?
 
-    def use_service_accounts?(options)
-      # Google::Apis::ComputeV1::ServiceAccount
-      # TODO
-      false
+      service_account = Google::Apis::ComputeV1::ServiceAccount.new
+      service_account.email  = options[:service_account_name]
+      service_account.scopes = options[:service_account_scopes].map { |scope| "https://www.googleapis.com/auth/#{scope}" unless scope.start_with?("https://www.googleapis.com/auth/") }
+
+      Array(service_account)
     end
 
     def instance_tags_for(tags)
