@@ -158,7 +158,8 @@ class Chef::Knife::Cloud
         service_account_scopes: locate_config_value(:service_account_scopes),
         service_account_name:   locate_config_value(:service_account_name),
         compute_user_data:      locate_config_value(:compute_user_data),
-        metadata:               metadata
+        metadata:               metadata,
+        tags:                   locate_config_value(:tags)
       }
     end
 

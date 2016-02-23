@@ -27,7 +27,7 @@ class Chef::Knife::Cloud
   class GoogleService < Service
     include Chef::Knife::Cloud::GoogleServiceHelpers
 
-    attr_reader :project, :zone
+    attr_reader :project, :zone, :wait_time, :refresh_rate, :max_pages, :max_page_size
 
     def initialize(options = {})
       @project       = options[:project]
@@ -232,6 +232,7 @@ class Chef::Knife::Cloud
       inst_obj.network_interfaces = instance_network_interfaces_for(options)
       inst_obj.scheduling         = instance_scheduling_for(options)
       inst_obj.service_accounts   = instance_service_accounts_for(options) if use_service_accounts?(options)
+      inst_obj.tags               = instance_tags_for(options[:tags])
 
       inst_obj
     end
@@ -299,8 +300,18 @@ class Chef::Knife::Cloud
     end
 
     def instance_metadata_for(metadata)
-      # TODO
-      # Google::Apis::ComputeV1::Metadata
+      return if metadata.nil? || metadata.empty?
+
+      metadata_obj = Google::Apis::ComputeV1::Metadata.new
+      metadata_obj.items = metadata.each_with_object([]) do |(k, v), memo|
+                             metadata_item       = Google::Apis::ComputeV1::Metadata::Item.new
+                             metadata_item.key   = k
+                             metadata_item.value = v
+
+                             memo << metadata_item
+                           end
+
+      metadata_obj
     end
 
     def instance_network_interfaces_for(options)
@@ -347,6 +358,15 @@ class Chef::Knife::Cloud
       # Google::Apis::ComputeV1::ServiceAccount
       # TODO
       false
+    end
+
+    def instance_tags_for(tags)
+      return if tags.nil? || tags.empty?
+      
+      tag_obj = Google::Apis::ComputeV1::Tags.new
+      tag_obj.items = tags
+
+      tag_obj
     end
 
     def network_for(instance)
@@ -440,7 +460,7 @@ class Chef::Knife::Cloud
               print "Current status: #{current_status}."
             end
 
-            sleep refresh_time
+            sleep refresh_rate
           end
         end
       rescue Timeout::Error
